@@ -30,7 +30,8 @@ router.post('', multer({storage: storage}).single('image'), (req, res, next) => 
   const post = new Post({
     title: req.body.title,
     content: req.body.content,
-    imagePath: url + '/images/' + req.file.filename
+    imagePath: url + '/images/' + req.file.filename,
+    postTime: req.body.postTime
   });
 
   post.save()
@@ -41,17 +42,25 @@ router.post('', multer({storage: storage}).single('image'), (req, res, next) => 
         id: createdPost._id,
         title: createdPost.title,
         content: createdPost.content,
-        imagePath: createdPost.imagePath
+        imagePath: createdPost.imagePath,
+        postTime: createdPost.postTime
       }
     });
   });
 });
 
-router.put('/:id', (req, res, next) => {
+router.put('/:id', multer({storage: storage}).single('image'), (req, res, next) => {
+  let imagePath = req.body.imagePath;
+  if(req.file) {
+    const url = req.protocol + '://' + req.get('host');
+    imagePath = url + '/images/' + req.file.filename;
+  }
   const post = new Post({
     _id: req.body.id,
     title: req.body.title,
-    content: req.body.content
+    content: req.body.content,
+    imagePath: imagePath,
+    postTime: req.body.postTime
   });
 
   Post.updateOne({_id: req.params.id}, post).then(result => {

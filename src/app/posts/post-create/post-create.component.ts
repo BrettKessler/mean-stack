@@ -4,6 +4,7 @@ import { PostsService } from '../posts.service';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Post } from '../post.model';
 import { mimeType } from './mime-type.validator';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-post-create',
@@ -16,6 +17,7 @@ export class PostCreateComponent implements OnInit {
   isLoading = false;
   form: FormGroup;
   imagePreview: string;
+  timeOfPost = moment().format('MMMM Do YYYY, h:mm:ss a');
   public post: Post;
   private mode = 'create';
   private postId = 'string';
@@ -46,11 +48,13 @@ export class PostCreateComponent implements OnInit {
             id: postData._id,
             title: postData.title,
             content: postData.content,
-            imagePath: null
+            imagePath: postData.imagePath,
+            postTime: postData.postTime
           };
           this.form.setValue({
             title: this.post.title,
-            content: this.post.content
+            content: this.post.content,
+            image: this.post.imagePath
           });
         });
       } else {
@@ -60,7 +64,7 @@ export class PostCreateComponent implements OnInit {
     });
   }
 
-  onImagePicked(event: Event){
+  onImagePicked(event: Event) {
     const file = (event.target as HTMLInputElement).files[0];
     this.form.patchValue({image: file});
     // tslint:disable-next-line: no-unused-expression
@@ -81,13 +85,16 @@ export class PostCreateComponent implements OnInit {
       this.postsService.addPost(
         this.form.value.title,
         this.form.value.content,
-        this.form.value.image
+        this.form.value.image,
+        this.timeOfPost
       );
     } else {
       this.postsService.updatePost(
         this.postId,
         this.form.value.title,
-        this.form.value.content
+        this.form.value.content,
+        this.form.value.image,
+        this.timeOfPost
       );
     }
     this.form.reset();

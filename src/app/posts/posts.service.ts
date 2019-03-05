@@ -2,7 +2,6 @@ import { Post } from './post.model';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs';
-import { stringify } from '@angular/core/src/util';
 import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
@@ -10,7 +9,6 @@ import { Router } from '@angular/router';
 export class PostsService {
   private posts: Post[] = [];
   private postsUpdated = new Subject<Post[]>();
-
   constructor(private http: HttpClient, private router: Router) {}
 
   getPosts() {
@@ -21,7 +19,8 @@ export class PostsService {
             title: post.title,
             content: post.content,
             id: post._id,
-            imagePath: post.imagePath
+            imagePath: post.imagePath,
+            postTime: post.postTime
           };
         });
       }))
@@ -31,19 +30,22 @@ export class PostsService {
       });
   }
 
-  getPostUpdateListener(){
+  getPostUpdateListener() {
     return this.postsUpdated.asObservable();
   }
 
   getPost(id: string) {
-    return this.http.get<{_id: string, title: string, content: string}>('http://localhost:3000/api/posts/' + id);
+    return this.http.get<{_id: string, title: string, content: string, imagePath: string, postTime: string}>(
+      'http://localhost:3000/api/posts/' + id
+    );
   }
 
-  addPost(title: string, content: string, image: File) {
+  addPost(title: string, content: string, image: File, postTime: string) {
     const postData = new FormData();
     postData.append('title', title);
     postData.append('content', content);
     postData.append('image', image, title);
+    postData.append('postTime', postTime);
     this.http
       .post<{message: string, post: Post}>(
         'http://localhost:3000/api/posts',
@@ -54,7 +56,8 @@ export class PostsService {
           id: responseData.post.id,
           title,
           content,
-          imagePath: responseData.post.imagePath
+          imagePath: responseData.post.imagePath,
+          postTime
         };
         const id = responseData.post.id;
         post.id = id;
@@ -64,13 +67,35 @@ export class PostsService {
     });
   }
 
-  updatePost(id: string, title: string, content: string) {
-    const post: Post = {id, title, content, imagePath: null};
+  updatePost(id: string, title: string, content: string, image: File | string, postTime: string) {
+    let postData: Post | FormData;
+    if (typeof(image) === 'object') {
+      postData = new FormData();
+      postData.append('id', id);
+      postData.append('title', title);
+      postData.append('content', content);
+      postData.append('image', image, title);
+    } else {
+      postData = {
+        id,
+        title,
+        content,
+        imagePath: image,
+        postTime: '*Edited on ' + postTime
+      };
+    }
     this.http
-      .put('http://localhost:3000/api/posts/' + id, post)
+      .put('http://localhost:3000/api/posts/' + id, postData)
       .subscribe((response) => console.log(response));
     const updatedPosts = [...this.posts];
-    const oldPostIndex = updatedPosts.findIndex(p => p.id === post.id);
+    const oldPostIndex = updatedPosts.findIndex(p => p.id === id);
+    const post: Post = {
+      id,
+      title,
+      content,
+      imagePath: 'Response.imagePath',
+      postTime
+    };
     updatedPosts[oldPostIndex] = post;
     this.posts = updatedPosts;
     this.postsUpdated.next([...this.posts]);
