@@ -3,6 +3,8 @@ import { Subscription } from 'rxjs';
 
 import { Post } from '../post.model';
 import { PostsService } from '../posts.service';
+import { PageEvent } from '@angular/material';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component ({
   selector: 'app-post-list',
@@ -16,27 +18,51 @@ export class PostListComponent implements OnInit, OnDestroy {
   //   {title: 'Third Post', content: 'This is the third post content'},
   // ];
   posts: Post [] = [];
+  totalPosts = 0;
+  postsPerPage = 2;
+  currentPage = 1;
+  pageSizeOptions = [1, 2, 5, 10];
   isLoading = false;
+  userIsAuthenticated = false;
   private postsSub: Subscription;
+  private authStatusSub: Subscription;
 
-  constructor(public postsService: PostsService) {}
+  constructor(public postsService: PostsService, private authService: AuthService) {}
 
   ngOnInit() {
-    this.postsService.getPosts();
+    this.postsService.getPosts(this.postsPerPage, this.currentPage);
     this.isLoading = true;
     this.postsSub = this.postsService.getPostUpdateListener()
-    .subscribe((posts: Post[]) => {
+    .subscribe((postData: {posts: Post[], postCount: number}) => {
       this.isLoading = false;
-      this.posts = posts;
+      this.totalPosts = postData.postCount;
+      this.posts = postData.posts;
+    });
+    this.userIsAuthenticated = this.authService.getIsAuth();
+    this.authStatusSub = this.authService
+      .getAuthStatusListener()
+      .subscribe(isAuthenticated => {
+        this.userIsAuthenticated = isAuthenticated;
     });
   }
 
   onDelete(postId: string) {
-    this.postsService.deletePost(postId);
+    this.isLoading = true;
+    this.postsService.deletePost(postId).subscribe(() => {
+      this.postsService.getPosts(this.postsPerPage, this.currentPage);
+    });
   }
 
   ngOnDestroy() {
     this.postsSub.unsubscribe();
+    this.authStatusSub.unsubscribe();
+  }
+
+  onPageChange(pageData: PageEvent) {
+    this.isLoading = true;
+    this.currentPage = pageData.pageIndex + 1;
+    this.postsPerPage = pageData.pageSize;
+    this.postsService.getPosts(this.postsPerPage, this.currentPage);
   }
 }
 
