@@ -25,7 +25,8 @@ export class PostsService {
             content: post.content,
             id: post._id,
             imagePath: post.imagePath,
-            postTime: post.postTime
+            postTime: post.postTime,
+            creator: post.creator
           };
         }),
         maxPosts: postData.maxPosts
@@ -45,7 +46,7 @@ export class PostsService {
   }
 
   getPost(id: string) {
-    return this.http.get<{_id: string, title: string, content: string, imagePath: string, postTime: string}>(
+    return this.http.get<{_id: string,title: string, content: string, imagePath: string, postTime: string, creator: string}>(
       'http://localhost:3000/api/posts/' + id
     );
   }
@@ -80,7 +81,8 @@ export class PostsService {
         title,
         content,
         imagePath: image,
-        postTime: '*Edited on ' + postTime
+        postTime: '*Edited on ' + postTime,
+        creator: null
       };
     }
     this.http

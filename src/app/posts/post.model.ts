@@ -4,5 +4,6 @@ export interface Post {
   content: string;
   imagePath: string;
   postTime: string;
+  creator: string;
 }
 
